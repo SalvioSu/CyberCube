@@ -5,15 +5,24 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     margin: 0;
+    padding-top: 30px;
+    padding-bottom: 60px; /* 讓網頁底部留下空間 */
+    box-sizing: border-box;
     overflow: auto;
 }
 
 h1 {
     margin-bottom: 5px;
     text-shadow: 0 0 10px #00ffff;
+}
+
+.instructions {
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+    color: #8b949e;
 }
 
 .scoreboard {
@@ -40,6 +49,13 @@ h1 {
     font-size: 1rem;
     outline: none;
     cursor: pointer;
+}
+
+/* 遊戲面板外層容器（負責提供按鈕定位基準） */
+.game-wrapper {
+    position: relative;
+    display: inline-block;
+    margin-top: 10px;
 }
 
 .grid-container {
@@ -75,31 +91,33 @@ h1 {
     box-shadow: 0 0 12px #2ed573;
 }
 
-.controls {
-    margin-top: 20px;
-}
-
-button {
+/* 疊在遊戲面板正中央的按鈕樣式 */
+.overlay-start-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
     background-color: #00ffff;
     color: #0d1117;
     border: none;
-    padding: 10px 25px;
-    font-size: 1.1rem;
+    padding: 12px 28px;
+    font-size: 1.2rem;
     font-weight: bold;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-    transition: 0.2s;
+    box-shadow: 0 0 15px rgba(0, 255, 255, 0.6);
+    transition: all 0.2s ease;
 }
 
-button:hover:not(:disabled) {
+.overlay-start-btn:hover:not(:disabled) {
     background-color: #fff;
-    box-shadow: 0 0 15px #fff;
+    box-shadow: 0 0 20px #fff;
 }
 
-button:disabled {
-    background-color: #484f58;
-    color: #8b949e;
+.overlay-start-btn:disabled {
+    opacity: 0;
+    pointer-events: none;
     cursor: not-allowed;
     box-shadow: none;
 }

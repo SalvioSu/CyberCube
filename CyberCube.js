@@ -70,10 +70,11 @@ export default class CyberCube {
         this.audioCtx = null;
         this.bgmTimer = null;
         this.bgmStep = 0;
+        this.isBgmPlaying = false; // 追蹤 BGM 是否已經啟動
 
-        // --- 新增音量控制變數 ---
-        this.MusicVolume = 0.5;   // 背景音樂音量，預設 0.2
-        this.SoundEffect = 0.5;   // 音效音量，預設 0.2
+        // --- 音量控制變數 ---
+        this.MusicVolume = 0.5;   // 背景音樂音量
+        this.SoundEffect = 0.5;   // 音效音量
 
         this.bindEvents();
         this.updateGridSizeFromSelect();
@@ -135,10 +136,10 @@ export default class CyberCube {
 
     // 開始背景音樂迴圈
     startBGM() {
-        this.stopBGM();
+        if (this.bgmTimer) return; // 避免重複啟動
         this.bgmStep = 0;
-        // 簡單的電子音樂頻率陣列 (Pentatonic scale 循環)
-        // const melody = [220, 246.94, 293.66, 329.63, 392, 329.63, 293.66, 246.94];
+        this.isBgmPlaying = true;
+
         const melody = [
             // 第一段：基礎迴圈與上行
             220.00, 246.94, 293.66, 329.63, 392.00, 329.63, 293.66, 246.94,
@@ -182,7 +183,7 @@ export default class CyberCube {
         ];
 
         this.bgmTimer = setInterval(() => {
-            if (!this.isPlaying || !this.audioCtx) return;
+            if (!this.isBgmPlaying || !this.audioCtx) return;
             try {
                 const osc = this.audioCtx.createOscillator();
                 const gain = this.audioCtx.createGain();
@@ -193,7 +194,7 @@ export default class CyberCube {
 
                 osc.frequency.setValueAtTime(freq, now);
 
-                gain.gain.setValueAtTime(this.MusicVolume, now); // 音量放小聲作為背景音樂
+                gain.gain.setValueAtTime(this.MusicVolume, now);
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
                 osc.connect(gain);
@@ -209,8 +210,9 @@ export default class CyberCube {
         }, 250); // 每 250ms 播一個音符
     }
 
-    // 停止背景音樂
+    // 暫停或停止背景音樂
     stopBGM() {
+        this.isBgmPlaying = false;
         if (this.bgmTimer) {
             clearInterval(this.bgmTimer);
             this.bgmTimer = null;
@@ -258,6 +260,18 @@ export default class CyberCube {
     }
 
     bindEvents() {
+        // 網頁任何地方獲得第一次點擊時，自動解鎖音訊並開始播放 BGM
+        const unlockAudioAndPlayBgm = () => {
+            this.initAudio();
+            this.startBGM();
+            // 移除監聽器，只需要觸發一次即可
+            window.removeEventListener('click', unlockAudioAndPlayBgm);
+            window.removeEventListener('keydown', unlockAudioAndPlayBgm);
+        };
+
+        window.addEventListener('click', unlockAudioAndPlayBgm);
+        window.addEventListener('keydown', unlockAudioAndPlayBgm);
+
         this.startBtn.addEventListener('click', () => {
             this.initAudio(); 
             this.startGame();
@@ -286,7 +300,7 @@ export default class CyberCube {
         this.isPlaying = true;
 
         this.initializeFixedCells();
-        this.startBGM(); // 啟動背景音樂
+        this.startBGM(); // 確保遊戲開始時音樂也在播放
 
         this.spawnInterval = setInterval(() => this.updateGameLoop(), 100);
     }
@@ -474,7 +488,6 @@ export default class CyberCube {
     endGame() {
         this.isPlaying = false;
         clearInterval(this.spawnInterval);
-        this.stopBGM(); // 停止背景音樂
         this.playSound('gameover'); 
         
         this.gridCells.forEach(cellObj => {
