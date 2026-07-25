@@ -14,7 +14,7 @@ export class Cell {
     }
 }
 
-// 綠色方塊：固定不動、點擊加分（改為增加剩餘時間 +1 秒）
+// 綠色方塊：固定不動、點擊增加剩餘時間 +1 秒
 export class GreenCell extends Cell {
     constructor(row, col) {
         super(row, col, 'green', 'stay', 0);
@@ -25,10 +25,11 @@ export class GreenCell extends Cell {
     }
 }
 
-// 紅色方塊：可移動、點擊扣分（改為減少剩餘時間 -10 秒）
+// 紅色方塊：可移動、點擊減少剩餘時間 -10 秒
 export class RedCell extends Cell {
-    constructor(row, col, direction = 'down', updateFreq = 300) {
+    constructor(row, col, direction = 'down', updateFreq = 300, depth = 2) {
         super(row, col, 'red', direction, updateFreq);
+        this.depth = depth; // 紅色方塊的深度屬性，預設為 2
     }
 
     interact() {
@@ -65,8 +66,68 @@ export default class CyberCube {
         
         this.counter = 0;
 
+        // 初始化 Web Audio API 音訊上下文
+        this.audioCtx = null;
+
         this.bindEvents();
         this.updateGridSizeFromSelect();
+    }
+
+    // 初始化或解鎖 AudioContext（需透過者互動觸發）
+    initAudio() {
+        if (!this.audioCtx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            this.audioCtx = new AudioContext();
+        }
+        if (this.audioCtx.state === 'suspended') {
+            this.audioCtx.resume();
+        }
+    }
+
+    // 播放音效輔助函式 (使用 Web Audio API 合成)
+    playSound(type) {
+        try {
+            this.initAudio();
+            if (!this.audioCtx) return;
+
+            const osc = this.audioCtx.createOscillator();
+            const gainNode = this.audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(this.audioCtx.destination);
+
+            const now = this.audioCtx.currentTime;
+
+            if (type === 'green') {
+                // 綠色方塊音效：高音、清脆、短促
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now); // D5
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'red') {
+                // 紅色方塊音效：低沉、鋸齒波（警告感）
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
+                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'gameover') {
+                // 遊戲結束音效：低音下墜
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.5);
+                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        } catch (e) {
+            console.log('Audio playback error:', e);
+        }
     }
 
     updateGridSizeFromSelect() {
@@ -110,7 +171,10 @@ export default class CyberCube {
     }
 
     bindEvents() {
-        this.startBtn.addEventListener('click', () => this.startGame());
+        this.startBtn.addEventListener('click', () => {
+            this.initAudio(); // 點擊開始按鈕時解鎖音訊
+            this.startGame();
+        });
         
         const handleSelectChange = () => {
             if (!this.isPlaying) {
@@ -136,7 +200,6 @@ export default class CyberCube {
 
         this.initializeFixedCells();
 
-        // 統一由 updateGameLoop (每 100ms 執行一次) 處理時間遞增與遞減
         this.spawnInterval = setInterval(() => this.updateGameLoop(), 100);
     }
 
@@ -161,35 +224,44 @@ export default class CyberCube {
         const waveTypes = ['horizontal_down', 'horizontal_up', 'vertical_right', 'vertical_left'];
         let chosenType = waveTypes[Math.floor(Math.random() * waveTypes.length)];
         let updateFreq = 200; 
-        let newRedRow = [];
+        let newRedCells = [];
+        let defaultDepth = 2; // 深度為 2
 
         if (chosenType === 'horizontal_down') {
-            let startRow = -1;
-            for (let c = 0; c < this.cols; c++) {
-                newRedRow.push(new RedCell(startRow, c, 'down', updateFreq));
+            for (let d = 0; d < defaultDepth; d++) {
+                let startRow = -1 - d;
+                for (let c = 0; c < this.cols; c++) {
+                    newRedCells.push(new RedCell(startRow, c, 'down', updateFreq, defaultDepth));
+                }
             }
-            this.maxRedSteps = this.rows + 2; 
+            this.maxRedSteps = this.rows + defaultDepth + 1; 
         } else if (chosenType === 'horizontal_up') {
-            let startRow = this.rows;
-            for (let c = 0; c < this.cols; c++) {
-                newRedRow.push(new RedCell(startRow, c, 'up', updateFreq));
+            for (let d = 0; d < defaultDepth; d++) {
+                let startRow = this.rows + d;
+                for (let c = 0; c < this.cols; c++) {
+                    newRedCells.push(new RedCell(startRow, c, 'up', updateFreq, defaultDepth));
+                }
             }
-            this.maxRedSteps = this.rows + 2;
+            this.maxRedSteps = this.rows + defaultDepth + 1;
         } else if (chosenType === 'vertical_right') {
-            let startCol = -1;
-            for (let r = 0; r < this.rows; r++) {
-                newRedRow.push(new RedCell(r, startCol, 'right', updateFreq));
+            for (let d = 0; d < defaultDepth; d++) {
+                let startCol = -1 - d;
+                for (let r = 0; r < this.rows; r++) {
+                    newRedCells.push(new RedCell(r, startCol, 'right', updateFreq, defaultDepth));
+                }
             }
-            this.maxRedSteps = this.cols + 2;
+            this.maxRedSteps = this.cols + defaultDepth + 1;
         } else if (chosenType === 'vertical_left') {
-            let startCol = this.cols;
-            for (let r = 0; r < this.rows; r++) {
-                newRedRow.push(new RedCell(r, startCol, 'left', updateFreq));
+            for (let d = 0; d < defaultDepth; d++) {
+                let startCol = this.cols + d;
+                for (let r = 0; r < this.rows; r++) {
+                    newRedCells.push(new RedCell(r, startCol, 'left', updateFreq, defaultDepth));
+                }
             }
-            this.maxRedSteps = this.cols + 2;
+            this.maxRedSteps = this.cols + defaultDepth + 1;
         }
 
-        this.activeRedCells = newRedRow;
+        this.activeRedCells = newRedCells;
         this.redWaveSteps = 0;
     }
 
@@ -198,11 +270,9 @@ export default class CyberCube {
 
         this.counter = (this.counter + 100) % 1000;
 
-        // 1. 更新時間系統（每 100ms 增加 0.1 秒存活時間，減少 0.1 秒剩餘時間）
         this.survivalTime = parseFloat((this.survivalTime + 0.1).toFixed(1));
         this.timeLeft = parseFloat((this.timeLeft - 0.1).toFixed(1));
 
-        // 檢查剩餘時間是否歸零
         if (this.timeLeft <= 0) {
             this.timeLeft = 0.0;
             this.updateDisplays();
@@ -210,7 +280,6 @@ export default class CyberCube {
             return;
         }
 
-        // 2. 維持綠色方塊數量為 3 個
         let currentGreenCount = this.gridCells.filter(cell => cell.color === 'green').length;
         if (currentGreenCount < 3) {
             let emptyCells = this.gridCells.filter(cell => cell.color === 'normal');
@@ -224,15 +293,12 @@ export default class CyberCube {
             }
         }
 
-        // 3. 移動現有的紅色方塊
         this.moveRedCells();
 
-        // 4. 如果整排方塊走完步數，生成下一條
         if (this.activeRedCells.length === 0 || this.redWaveSteps >= this.maxRedSteps) {
             this.spawnRedWave();
         }
 
-        // 5. 刷新畫面與顯示
         this.renderGrid();
         this.updateDisplays();
     }
@@ -285,10 +351,12 @@ export default class CyberCube {
 
         let timeChange = 0;
         if (isCoveredByRed) {
-            timeChange = -10; // 點擊紅色方塊扣 10 秒
+            timeChange = -10; 
+            this.playSound('red'); // 播放紅色方塊扣分音效
             this.activeRedCells = this.activeRedCells.filter(red => !(red.row === clickedGridCell.row && red.col === clickedGridCell.col));
         } else if (clickedGridCell.color === 'green') {
-            timeChange = clickedGridCell.interact(); // 點擊綠色方塊加 1 秒
+            timeChange = clickedGridCell.interact(); 
+            this.playSound('green'); // 播放綠色方塊加分音效
             this.gridCells[index] = new Cell(clickedGridCell.row, clickedGridCell.col, 'normal', 'stay', 0);
             this.gridCells[index].element = clickedGridCell.element;
         }
@@ -307,7 +375,6 @@ export default class CyberCube {
     }
 
     updateDisplays() {
-        // 如果你的 DOM 結構可以同時呈現，這裡將剩餘時間與存活時間分別更新
         if (this.timerDisplay) {
             this.timerDisplay.textContent = this.timeLeft.toFixed(1);
         }
@@ -319,6 +386,8 @@ export default class CyberCube {
     endGame() {
         this.isPlaying = false;
         clearInterval(this.spawnInterval);
+        this.playSound('gameover'); // 播放遊戲結束音效
+        
         this.gridCells.forEach(cellObj => {
             cellObj.color = 'normal';
             if (cellObj.element) cellObj.element.className = 'cell';
