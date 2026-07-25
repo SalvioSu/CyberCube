@@ -74,7 +74,7 @@ export default class CyberCube {
         this.isBgmPlaying = false; // 追蹤 BGM 是否已經啟動
 
         // --- 音量與靜音控制變數 ---
-        this.MusicVolume = 0.5;   // 背景音樂音量
+        this.MusicVolume = 0.2;   // 背景音樂音量
         this.SoundEffect = 0.5;   // 音效音量
         this.isMuted = false;     // 追蹤是否靜音
 
