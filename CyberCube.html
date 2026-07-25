@@ -91,8 +91,8 @@
 
     <h1>⚡ 閃動格子 ⚡</h1>
     <div class="scoreboard">
-        <div>分數: <span id="score">0</span></div>
-        <div>時間: <span id="timer">30</span> 秒</div>
+        <div>分數: <span id="time_exist">0</span></div>
+        <div>時間: <span id="time_left">30</span> 秒</div>
     </div>
 
     <div class="grid-container" id="grid"></div>
@@ -103,13 +103,13 @@
 
     <script>
         const gridContainer = document.getElementById('grid');
-        const scoreDisplay = document.getElementById('score');
-        const timerDisplay = document.getElementById('timer');
+        const scoreDisplay = document.getElementById('time_exist');
+        const timerDisplay = document.getElementById('time_left');
         const startBtn = document.getElementById('startBtn');
 
         const gridSize = 16; // 4x4 網路格子
         let cells = [];
-        let score = 0;
+        let time_exist = 0;
         let timeLeft = 30;
         let gameInterval = null;
         let spawnInterval = null;
@@ -133,9 +133,9 @@
         function startGame() {
             // 重置狀態
             initGrid();
-            score = 0;
+            time_exist = 0;
             timeLeft = 30;
-            scoreDisplay.textContent = score;
+            scoreDisplay.textContent = time_exist;
             timerDisplay.textContent = timeLeft;
             startBtn.disabled = true;
             isPlaying = true;
@@ -184,16 +184,16 @@
 
             let cell = cells[index];
             if (cell.classList.contains('blue')) {
-                score += 10;
+                time_exist += 10;
                 cell.className = 'cell'; // 點掉後熄滅
             } else if (cell.classList.contains('green')) {
-                score += 30;
+                time_exist += 30;
                 cell.className = 'cell';
             } else if (cell.classList.contains('red')) {
-                score -= 20;
+                time_exist -= 20;
                 cell.className = 'cell';
             }
-            scoreDisplay.textContent = score;
+            scoreDisplay.textContent = time_exist;
         }
 
         // 結束遊戲
@@ -203,7 +203,7 @@
             clearInterval(spawnInterval);
             cells.forEach(cell => cell.className = 'cell');
             startBtn.disabled = false;
-            alert(`時間到！你的最終得分是：${score} 分`);
+            alert(`時間到！你的最終得分是：${time_exist} 分`);
         }
 
         // 初始化畫面

@@ -36,8 +36,8 @@
     </div>
 
     <div class="scoreboard">
-        <div>存活時間: <span id="score">0</span>秒</div>
-        <div>剩餘時間: <span id="timer">30</span> 秒</div>
+        <div>存活時間: <span id="time_exist">0</span>秒</div>
+        <div>剩餘時間: <span id="time_left">60</span> 秒</div>
     </div>
 
     <div class="grid-container" id="grid"></div>
@@ -53,8 +53,8 @@
         // 初始化遊戲實例
         const game = new CyberCube({
             gridContainerId: 'grid',
-            scoreId: 'score',
-            timerId: 'timer',
+            scoreId: 'time_exist',
+            timerId: 'time_left',
             startBtnId: 'startBtn',
             rowsSelectId: 'rowsSelect',
             colsSelectId: 'colsSelect'
