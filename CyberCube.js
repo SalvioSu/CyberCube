@@ -66,14 +66,16 @@ export default class CyberCube {
         
         this.counter = 0;
 
-        // 初始化 Web Audio API 音訊上下文
+        // 音訊與背景音樂相關屬性
         this.audioCtx = null;
+        this.bgmTimer = null;
+        this.bgmStep = 0;
 
         this.bindEvents();
         this.updateGridSizeFromSelect();
     }
 
-    // 初始化或解鎖 AudioContext（需透過者互動觸發）
+    // 初始化或解鎖 AudioContext
     initAudio() {
         if (!this.audioCtx) {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -84,7 +86,7 @@ export default class CyberCube {
         }
     }
 
-    // 播放音效輔助函式 (使用 Web Audio API 合成)
+    // 播放音效輔助函式
     playSound(type) {
         try {
             this.initAudio();
@@ -98,7 +100,6 @@ export default class CyberCube {
             const now = this.audioCtx.currentTime;
 
             if (type === 'green') {
-                // 綠色方塊音效：高音、清脆、短促
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(587.33, now); // D5
                 osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
@@ -107,7 +108,6 @@ export default class CyberCube {
                 osc.start(now);
                 osc.stop(now + 0.15);
             } else if (type === 'red') {
-                // 紅色方塊音效：低沉、鋸齒波（警告感）
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
@@ -116,7 +116,6 @@ export default class CyberCube {
                 osc.start(now);
                 osc.stop(now + 0.2);
             } else if (type === 'gameover') {
-                // 遊戲結束音效：低音下墜
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(300, now);
                 osc.frequency.linearRampToValueAtTime(80, now + 0.5);
@@ -127,6 +126,89 @@ export default class CyberCube {
             }
         } catch (e) {
             console.log('Audio playback error:', e);
+        }
+    }
+
+    // 開始背景音樂迴圈
+    startBGM() {
+        this.stopBGM();
+        this.bgmStep = 0;
+        // 簡單的電子音樂頻率陣列 (Pentatonic scale 循環)
+        // const melody = [220, 246.94, 293.66, 329.63, 392, 329.63, 293.66, 246.94];
+        const melody = [
+            // 第一段：基礎迴圈與上行
+            220.00, 246.94, 293.66, 329.63, 392.00, 329.63, 293.66, 246.94,
+            220.00, 246.94, 293.66, 329.63, 440.00, 392.00, 329.63, 293.66,
+            
+            // 第二段：音域拉高與高低起伏
+            329.63, 392.00, 440.00, 493.88, 587.33, 493.88, 440.00, 392.00,
+            329.63, 293.66, 329.63, 392.00, 440.00, 329.63, 246.94, 220.00,
+
+            // 第三段：副歌激昂感 (ARP 琶音風格)
+            440.00, 523.25, 659.25, 523.25, 440.00, 392.00, 329.63, 392.00,
+            440.00, 523.25, 659.25, 783.99, 659.25, 523.25, 440.00, 392.00,
+
+            // 第四段：節奏轉折與下行迴旋
+            349.23, 440.00, 523.25, 440.00, 349.23, 293.66, 349.23, 440.00,
+            329.63, 392.00, 493.88, 392.00, 329.63, 246.94, 293.66, 329.63,
+
+            // 第五段：高低交錯的懸疑感
+            220.00, 440.00, 220.00, 392.00, 220.00, 349.23, 220.00, 329.63,
+            246.94, 493.88, 246.94, 440.00, 246.94, 392.00, 246.94, 329.63,
+
+            // 第六段：快速跳動銜接段
+            293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 523.25, 440.00,
+            392.00, 329.63, 293.66, 246.94, 220.00, 246.94, 293.66, 329.63,
+
+            // 第七段：強烈節奏重音
+            440.00, 440.00, 523.25, 329.63, 440.00, 440.00, 587.33, 493.88,
+            329.63, 329.63, 392.00, 246.94, 329.63, 329.63, 440.00, 392.00,
+
+            // 第八段：副歌高潮再現
+            440.00, 523.25, 659.25, 783.99, 880.00, 783.99, 659.25, 523.25,
+            440.00, 392.00, 329.63, 293.66, 440.00, 523.25, 659.25, 880.00,
+
+            // 第九段：緊張感遞減與過渡
+            493.88, 440.00, 392.00, 329.63, 293.66, 246.94, 220.00, 196.00,
+            220.00, 246.94, 293.66, 329.63, 392.00, 440.00, 493.88, 523.25,
+
+            // 第十段：尾奏收尾與循環準備
+            587.33, 523.25, 493.88, 440.00, 392.00, 329.63, 293.66, 246.94,
+            220.00, 220.00, 220.00, 220.00, 293.66, 329.63, 440.00, 220.00
+        ];
+
+        this.bgmTimer = setInterval(() => {
+            if (!this.isPlaying || !this.audioCtx) return;
+            try {
+                const osc = this.audioCtx.createOscillator();
+                const gain = this.audioCtx.createGain();
+                osc.type = 'square'; // 8-bit 風格方波
+
+                const freq = melody[this.bgmStep % melody.length];
+                const now = this.audioCtx.currentTime;
+
+                osc.frequency.setValueAtTime(freq, now);
+                gain.gain.setValueAtTime(0.03, now); // 音量放小聲作為背景音樂
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+                osc.connect(gain);
+                gain.connect(this.audioCtx.destination);
+
+                osc.start(now);
+                osc.stop(now + 0.2);
+
+                this.bgmStep++;
+            } catch (e) {
+                console.log('BGM error:', e);
+            }
+        }, 250); // 每 250ms 播一個音符
+    }
+
+    // 停止背景音樂
+    stopBGM() {
+        if (this.bgmTimer) {
+            clearInterval(this.bgmTimer);
+            this.bgmTimer = null;
         }
     }
 
@@ -172,7 +254,7 @@ export default class CyberCube {
 
     bindEvents() {
         this.startBtn.addEventListener('click', () => {
-            this.initAudio(); // 點擊開始按鈕時解鎖音訊
+            this.initAudio(); 
             this.startGame();
         });
         
@@ -199,6 +281,7 @@ export default class CyberCube {
         this.isPlaying = true;
 
         this.initializeFixedCells();
+        this.startBGM(); // 啟動背景音樂
 
         this.spawnInterval = setInterval(() => this.updateGameLoop(), 100);
     }
@@ -225,7 +308,7 @@ export default class CyberCube {
         let chosenType = waveTypes[Math.floor(Math.random() * waveTypes.length)];
         let updateFreq = 200; 
         let newRedCells = [];
-        let defaultDepth = 2; // 深度為 2
+        let defaultDepth = 2;
 
         if (chosenType === 'horizontal_down') {
             for (let d = 0; d < defaultDepth; d++) {
@@ -352,11 +435,11 @@ export default class CyberCube {
         let timeChange = 0;
         if (isCoveredByRed) {
             timeChange = -10; 
-            this.playSound('red'); // 播放紅色方塊扣分音效
+            this.playSound('red'); 
             this.activeRedCells = this.activeRedCells.filter(red => !(red.row === clickedGridCell.row && red.col === clickedGridCell.col));
         } else if (clickedGridCell.color === 'green') {
             timeChange = clickedGridCell.interact(); 
-            this.playSound('green'); // 播放綠色方塊加分音效
+            this.playSound('green'); 
             this.gridCells[index] = new Cell(clickedGridCell.row, clickedGridCell.col, 'normal', 'stay', 0);
             this.gridCells[index].element = clickedGridCell.element;
         }
@@ -386,7 +469,8 @@ export default class CyberCube {
     endGame() {
         this.isPlaying = false;
         clearInterval(this.spawnInterval);
-        this.playSound('gameover'); // 播放遊戲結束音效
+        this.stopBGM(); // 停止背景音樂
+        this.playSound('gameover'); 
         
         this.gridCells.forEach(cellObj => {
             cellObj.color = 'normal';
