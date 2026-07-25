@@ -3,16 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>自定義網格閃動格子 (CyberCube)</title>
+    <title>CyberCube</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <h1>⚡ 閃動格子 ⚡</h1>
+    <h1>⚡ CyberCube ⚡</h1>
     
+    <div class="instructions">
+        <p>遊戲說明：躲過紅色方塊，點擊綠色方塊，你能堅持多久？</p>
+    </div>
+
     <div class="settings">
+        <span>版面設置：</span>
         <div>
-            <label for="colsSelect">COL:</label>
             <select id="colsSelect">
                 <option value="10">10</option>
                 <option value="9">9</option>
@@ -22,8 +26,8 @@
                 <option value="5">5</option>
             </select>
         </div>
+        <span>x</span>
         <div>
-            <label for="rowsSelect">ROW:</label>
             <select id="rowsSelect">
                 <option value="5">5</option>
                 <option value="6">6</option>
