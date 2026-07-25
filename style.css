@@ -1,0 +1,104 @@
+body {
+    background-color: #0d1117;
+    color: #ffffff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    overflow: auto;
+}
+
+h1 {
+    margin-bottom: 5px;
+    text-shadow: 0 0 10px #00ffff;
+}
+
+.scoreboard {
+    display: flex;
+    gap: 30px;
+    font-size: 1.2rem;
+    margin-bottom: 15px;
+}
+
+/* 設定控制選項列 */
+.settings {
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.settings select {
+    background-color: #21262d;
+    color: #00ffff;
+    border: 1px solid #30363d;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.grid-container {
+    display: grid;
+    /* 動態讀取變數來決定幾欄幾列 */
+    grid-template-columns: repeat(var(--grid-cols), 70px);
+    grid-template-rows: repeat(var(--grid-rows), 70px);
+    gap: 8px;
+    background-color: #161b22;
+    padding: 15px;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+}
+
+.cell {
+    background-color: #21262d;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.cell.blue {
+    background-color: #00d2ff;
+    box-shadow: 0 0 12px #00d2ff;
+}
+
+.cell.red {
+    background-color: #ff4757;
+    box-shadow: 0 0 12px #ff4757;
+}
+
+.cell.green {
+    background-color: #2ed573;
+    box-shadow: 0 0 12px #2ed573;
+}
+
+.controls {
+    margin-top: 20px;
+}
+
+button {
+    background-color: #00ffff;
+    color: #0d1117;
+    border: none;
+    padding: 10px 25px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
+    transition: 0.2s;
+}
+
+button:hover:not(:disabled) {
+    background-color: #fff;
+    box-shadow: 0 0 15px #fff;
+}
+
+button:disabled {
+    background-color: #484f58;
+    color: #8b949e;
+    cursor: not-allowed;
+    box-shadow: none;
+}
