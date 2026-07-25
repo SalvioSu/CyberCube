@@ -71,6 +71,10 @@ export default class CyberCube {
         this.bgmTimer = null;
         this.bgmStep = 0;
 
+        // --- 新增音量控制變數 ---
+        this.MusicVolume = 0.5;   // 背景音樂音量，預設 0.2
+        this.SoundEffect = 0.5;   // 音效音量，預設 0.2
+
         this.bindEvents();
         this.updateGridSizeFromSelect();
     }
@@ -103,7 +107,7 @@ export default class CyberCube {
                 osc.type = 'sine';
                 osc.frequency.setValueAtTime(587.33, now); // D5
                 osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
-                gainNode.gain.setValueAtTime(0.15, now);
+                gainNode.gain.setValueAtTime(this.SoundEffect, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
                 osc.start(now);
                 osc.stop(now + 0.15);
@@ -111,7 +115,7 @@ export default class CyberCube {
                 osc.type = 'sawtooth';
                 osc.frequency.setValueAtTime(150, now);
                 osc.frequency.exponentialRampToValueAtTime(60, now + 0.2);
-                gainNode.gain.setValueAtTime(0.2, now);
+                gainNode.gain.setValueAtTime(this.SoundEffect, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
                 osc.start(now);
                 osc.stop(now + 0.2);
@@ -119,7 +123,7 @@ export default class CyberCube {
                 osc.type = 'triangle';
                 osc.frequency.setValueAtTime(300, now);
                 osc.frequency.linearRampToValueAtTime(80, now + 0.5);
-                gainNode.gain.setValueAtTime(0.3, now);
+                gainNode.gain.setValueAtTime(this.SoundEffect, now);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
                 osc.start(now);
                 osc.stop(now + 0.5);
@@ -188,7 +192,8 @@ export default class CyberCube {
                 const now = this.audioCtx.currentTime;
 
                 osc.frequency.setValueAtTime(freq, now);
-                gain.gain.setValueAtTime(0.03, now); // 音量放小聲作為背景音樂
+
+                gain.gain.setValueAtTime(this.MusicVolume, now); // 音量放小聲作為背景音樂
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
 
                 osc.connect(gain);
