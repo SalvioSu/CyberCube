@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CyberCube</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 
@@ -37,6 +37,13 @@
                 <option value="10">10</option>
             </select>
         </div>
+        <!-- 純 SVG 喇叭圖示按鈕 -->
+        <button id="muteBtn" class="mute-icon-btn" title="切換音樂靜音">
+            <svg id="volumeIcon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
+        </button>
     </div>
 
     <div class="scoreboard">
@@ -61,7 +68,8 @@
             timerId: 'time_left',
             startBtnId: 'startBtn',
             rowsSelectId: 'rowsSelect',
-            colsSelectId: 'colsSelect'
+            colsSelectId: 'colsSelect',
+            muteBtnId: 'muteBtn'
         });
     </script>
 </body>

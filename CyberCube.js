@@ -46,12 +46,13 @@ export default class CyberCube {
         this.startBtn = document.getElementById(config.startBtnId);
         this.rowsSelect = document.getElementById(config.rowsSelectId);
         this.colsSelect = document.getElementById(config.colsSelectId);
+        this.muteBtn = document.getElementById(config.muteBtnId); // 靜音按鈕
         
         this.rows = 5;
         this.cols = 5;
         this.gridSize = 25;
         
-        this.gridCells = [];       
+        this.gridCells = [];        
         this.activeRedCells = [];  
         
         this.redWaveSteps = 0;
@@ -72,9 +73,10 @@ export default class CyberCube {
         this.bgmStep = 0;
         this.isBgmPlaying = false; // 追蹤 BGM 是否已經啟動
 
-        // --- 音量控制變數 ---
+        // --- 音量與靜音控制變數 ---
         this.MusicVolume = 0.5;   // 背景音樂音量
         this.SoundEffect = 0.5;   // 音效音量
+        this.isMuted = false;     // 追蹤是否靜音
 
         this.bindEvents();
         this.updateGridSizeFromSelect();
@@ -92,6 +94,7 @@ export default class CyberCube {
     }
 
     // 播放音效輔助函式
+// 播放音效輔助函式（不論是否靜音，音效都正常播放）
     playSound(type) {
         try {
             this.initAudio();
@@ -184,6 +187,10 @@ export default class CyberCube {
 
         this.bgmTimer = setInterval(() => {
             if (!this.isBgmPlaying || !this.audioCtx) return;
+            
+            // 如果切換到靜音，則不發出背景音樂頻率
+            if (this.isMuted) return;
+
             try {
                 const osc = this.audioCtx.createOscillator();
                 const gain = this.audioCtx.createGain();
@@ -216,6 +223,31 @@ export default class CyberCube {
         if (this.bgmTimer) {
             clearInterval(this.bgmTimer);
             this.bgmTimer = null;
+        }
+    }
+
+    // 切換靜音狀態
+    toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.muteBtn) {
+            if (this.isMuted) {
+                this.muteBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <line x1="23" y1="9" x2="17" y2="15"></line>
+                        <line x1="17" y1="9" x2="23" y2="15"></line>
+                    </svg>
+                `;
+                this.muteBtn.title = "解除靜音";
+            } else {
+                this.muteBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    </svg>
+                `;
+                this.muteBtn.title = "切換音樂靜音";
+            }
         }
     }
 
@@ -276,6 +308,12 @@ export default class CyberCube {
             this.initAudio(); 
             this.startGame();
         });
+
+        if (this.muteBtn) {
+            this.muteBtn.addEventListener('click', () => {
+                this.toggleMute();
+            });
+        }
         
         const handleSelectChange = () => {
             if (!this.isPlaying) {
