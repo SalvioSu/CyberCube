@@ -23,8 +23,10 @@ h1 {
     margin-bottom: 15px;
 }
 
-/* 設定控制選項列 */
 .settings {
+    display: flex;
+    gap: 15px;
+    align-items: center;
     margin-bottom: 15px;
     font-size: 1rem;
 }
@@ -42,10 +44,9 @@ h1 {
 
 .grid-container {
     display: grid;
-    /* 動態讀取變數來決定幾欄幾列 */
-    grid-template-columns: repeat(var(--grid-cols), 70px);
-    grid-template-rows: repeat(var(--grid-rows), 70px);
-    gap: 8px;
+    grid-template-columns: repeat(var(--grid-cols), 65px);
+    grid-template-rows: repeat(var(--grid-rows), 65px);
+    gap: 6px;
     background-color: #161b22;
     padding: 15px;
     border-radius: 12px;

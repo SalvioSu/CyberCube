@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動態網格閃動格子 (CyberCube)</title>
+    <title>自定義網格閃動格子 (CyberCube)</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,14 +11,28 @@
     <h1>⚡ 閃動格子 ⚡</h1>
     
     <div class="settings">
-        <label for="gridSizeSelect">選擇網格尺寸：</label>
-        <select id="gridSizeSelect">
-            <option value="4x4">4 x 4 (16格)</option>
-            <option value="5x5" selected>5 x 5 (25格)</option>
-            <option value="6x6">6 x 6 (36格)</option>
-            <option value="7x7">7 x 7 (49格)</option>
-            <option value="8x8">8 x 8 (64格)</option>
-        </select>
+        <div>
+            <label for="rowsSelect">列數 (Y):</label>
+            <select id="rowsSelect">
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
+        <div>
+            <label for="colsSelect">行數 (X):</label>
+            <select id="colsSelect">
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
     </div>
 
     <div class="scoreboard">
@@ -42,7 +56,8 @@
             scoreId: 'score',
             timerId: 'timer',
             startBtnId: 'startBtn',
-            sizeSelectId: 'gridSizeSelect'
+            rowsSelectId: 'rowsSelect',
+            colsSelectId: 'colsSelect'
         });
     </script>
 </body>
