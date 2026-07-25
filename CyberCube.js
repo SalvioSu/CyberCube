@@ -5,7 +5,7 @@ export class Cell {
         this.col = col;
         this.color = color;
         this.direction = direction;
-        this.update_freq = updateFreq; // 取代原本的 speed
+        this.update_freq = updateFreq;
         this.element = null;
     }
 
@@ -14,26 +14,25 @@ export class Cell {
     }
 }
 
-// 綠色方塊：固定不動、點擊加分
+// 綠色方塊：固定不動、點擊加分（改為增加剩餘時間 +1 秒）
 export class GreenCell extends Cell {
     constructor(row, col) {
         super(row, col, 'green', 'stay', 0);
     }
 
     interact() {
-        return 10;
+        return 1; // 增加 1 秒剩餘時間
     }
 }
 
-// 紅色方塊：可移動、點擊扣分
+// 紅色方塊：可移動、點擊扣分（改為減少剩餘時間 -10 秒）
 export class RedCell extends Cell {
     constructor(row, col, direction = 'down', updateFreq = 300) {
-        // 預設 update_freq 設為 300ms 檢查移動一次
         super(row, col, 'red', direction, updateFreq);
     }
 
     interact() {
-        return -25;
+        return -10; // 減少 10 秒剩餘時間
     }
 }
 
@@ -54,13 +53,16 @@ export default class CyberCube {
         this.gridCells = [];       
         this.activeRedCells = [];  
         
-        this.score = 0;
-        this.timeLeft = 30;
-        this.gameInterval = null;
+        this.redWaveSteps = 0;
+        this.maxRedSteps = 0;
+
+        // 時間與分數狀態
+        this.survivalTime = 0.0; // 存活時間
+        this.timeLeft = 60.0;    // 剩餘時間（初始 60 秒）
+        
         this.spawnInterval = null;
         this.isPlaying = false;
         
-        // 新增 counter 計數器（每 100ms 累積，到 1000 歸零）
         this.counter = 0;
 
         this.bindEvents();
@@ -85,6 +87,8 @@ export default class CyberCube {
         this.gridCells = [];
         this.activeRedCells = [];
         this.counter = 0;
+        this.redWaveSteps = 0;
+        this.maxRedSteps = 0;
 
         for (let i = 0; i < this.gridSize; i++) {
             const row = Math.floor(i / this.cols);
@@ -120,9 +124,10 @@ export default class CyberCube {
 
     startGame() {
         this.updateGridSizeFromSelect();
-        this.score = 0;
-        this.timeLeft = 30;
+        this.survivalTime = 0.0;
+        this.timeLeft = 60.0;
         this.counter = 0;
+        this.redWaveSteps = 0;
         this.updateDisplays();
         this.startBtn.disabled = true;
         if (this.rowsSelect) this.rowsSelect.disabled = true;
@@ -131,15 +136,7 @@ export default class CyberCube {
 
         this.initializeFixedCells();
 
-        this.gameInterval = setInterval(() => {
-            this.timeLeft--;
-            this.timerDisplay.textContent = this.timeLeft;
-            if (this.timeLeft <= 0) {
-                this.endGame();
-            }
-        }, 1000);
-
-        // 改為每 0.1 秒（100毫秒）執行一次遊戲循環
+        // 統一由 updateGameLoop (每 100ms 執行一次) 處理時間遞增與遞減
         this.spawnInterval = setInterval(() => this.updateGameLoop(), 100);
     }
 
@@ -155,41 +152,63 @@ export default class CyberCube {
             this.gridCells[index] = green;
         }
 
-        while (this.activeRedCells.length < 5) {
-            this.spawnRandomRedCell();
+        if (this.activeRedCells.length === 0) {
+            this.spawnRedWave();
         }
     }
 
-    spawnRandomRedCell() {
-        const directions = ['up', 'down', 'left', 'right'];
-        let dir = directions[Math.floor(Math.random() * directions.length)];
-        let startRow, startCol;
+    spawnRedWave() {
+        const waveTypes = ['horizontal_down', 'horizontal_up', 'vertical_right', 'vertical_left'];
+        let chosenType = waveTypes[Math.floor(Math.random() * waveTypes.length)];
+        let updateFreq = 200; 
+        let newRedRow = [];
 
-        if (dir === 'up') {
-            startRow = this.rows - 1;
-            startCol = Math.floor(Math.random() * this.cols);
-        } else if (dir === 'down') {
-            startRow = 0;
-            startCol = Math.floor(Math.random() * this.cols);
-        } else if (dir === 'left') {
-            startRow = Math.floor(Math.random() * this.rows);
-            startCol = this.cols - 1;
-        } else if (dir === 'right') {
-            startRow = Math.floor(Math.random() * this.rows);
-            startCol = 0;
+        if (chosenType === 'horizontal_down') {
+            let startRow = -1;
+            for (let c = 0; c < this.cols; c++) {
+                newRedRow.push(new RedCell(startRow, c, 'down', updateFreq));
+            }
+            this.maxRedSteps = this.rows + 2; 
+        } else if (chosenType === 'horizontal_up') {
+            let startRow = this.rows;
+            for (let c = 0; c < this.cols; c++) {
+                newRedRow.push(new RedCell(startRow, c, 'up', updateFreq));
+            }
+            this.maxRedSteps = this.rows + 2;
+        } else if (chosenType === 'vertical_right') {
+            let startCol = -1;
+            for (let r = 0; r < this.rows; r++) {
+                newRedRow.push(new RedCell(r, startCol, 'right', updateFreq));
+            }
+            this.maxRedSteps = this.cols + 2;
+        } else if (chosenType === 'vertical_left') {
+            let startCol = this.cols;
+            for (let r = 0; r < this.rows; r++) {
+                newRedRow.push(new RedCell(r, startCol, 'left', updateFreq));
+            }
+            this.maxRedSteps = this.cols + 2;
         }
 
-        // 可以隨機給予不同的 update_freq（例如 200ms、300ms 或 400ms）來製造速度差
-        const freqs = [200, 300, 400];
-        let randomFreq = freqs[Math.floor(Math.random() * freqs.length)];
-
-        let red = new RedCell(startRow, startCol, dir, randomFreq);
-        this.activeRedCells.push(red);
+        this.activeRedCells = newRedRow;
+        this.redWaveSteps = 0;
     }
 
     updateGameLoop() {
-        // 1. 更新 counter (每 100ms 增加 100，達到 1000 循環歸零)
+        if (!this.isPlaying) return;
+
         this.counter = (this.counter + 100) % 1000;
+
+        // 1. 更新時間系統（每 100ms 增加 0.1 秒存活時間，減少 0.1 秒剩餘時間）
+        this.survivalTime = parseFloat((this.survivalTime + 0.1).toFixed(1));
+        this.timeLeft = parseFloat((this.timeLeft - 0.1).toFixed(1));
+
+        // 檢查剩餘時間是否歸零
+        if (this.timeLeft <= 0) {
+            this.timeLeft = 0.0;
+            this.updateDisplays();
+            this.endGame();
+            return;
+        }
 
         // 2. 維持綠色方塊數量為 3 個
         let currentGreenCount = this.gridCells.filter(cell => cell.color === 'green').length;
@@ -205,37 +224,34 @@ export default class CyberCube {
             }
         }
 
-        // 3. 根據每個方塊的 update_freq 判斷是否在此次循環進行移動更新
+        // 3. 移動現有的紅色方塊
         this.moveRedCells();
 
-        // 4. 維持紅色方塊數量永遠為 5 個
-        while (this.activeRedCells.length < 5) {
-            this.spawnRandomRedCell();
+        // 4. 如果整排方塊走完步數，生成下一條
+        if (this.activeRedCells.length === 0 || this.redWaveSteps >= this.maxRedSteps) {
+            this.spawnRedWave();
         }
 
-        // 5. 刷新畫面顯示
+        // 5. 刷新畫面與顯示
         this.renderGrid();
+        this.updateDisplays();
     }
 
     moveRedCells() {
-        let nextRedCells = [];
+        if (this.activeRedCells.length === 0) return;
 
-        this.activeRedCells.forEach(red => {
-            // 如果滿足更新頻率的條件，才執行移動一步
-            if (red.update_freq > 0 && this.counter % red.update_freq === 0) {
-                if (red.direction === 'up') red.row -= 1;
-                else if (red.direction === 'down') red.row += 1;
-                else if (red.direction === 'left') red.col -= 1;
+        let freq = this.activeRedCells[0].update_freq;
+        let shouldMove = (freq > 0 && this.counter % freq === 0);
+
+        if (shouldMove) {
+            this.activeRedCells.forEach(red => {
+                if (red.direction === 'down') red.row += 1;
+                else if (red.direction === 'up') red.row -= 1;
                 else if (red.direction === 'right') red.col += 1;
-            }
-
-            // 檢查是否還在棋盤內，超出邊界就消失
-            if (red.row >= 0 && red.row < this.rows && red.col >= 0 && red.col < this.cols) {
-                nextRedCells.push(red);
-            }
-        });
-
-        this.activeRedCells = nextRedCells;
+                else if (red.direction === 'left') red.col -= 1;
+            });
+            this.redWaveSteps++;
+        }
     }
 
     renderGrid() {
@@ -249,11 +265,13 @@ export default class CyberCube {
         });
 
         this.activeRedCells.forEach(red => {
-            let index = red.row * this.cols + red.col;
-            if (index >= 0 && index < this.gridSize) {
-                let targetCell = this.gridCells[index];
-                if (targetCell && targetCell.element) {
-                    targetCell.element.className = 'cell red';
+            if (red.row >= 0 && red.row < this.rows && red.col >= 0 && red.col < this.cols) {
+                let index = red.row * this.cols + red.col;
+                if (index >= 0 && index < this.gridSize) {
+                    let targetCell = this.gridCells[index];
+                    if (targetCell && targetCell.element) {
+                        targetCell.element.className = 'cell red';
+                    }
                 }
             }
         });
@@ -265,40 +283,51 @@ export default class CyberCube {
         let clickedGridCell = this.gridCells[index];
         let isCoveredByRed = this.activeRedCells.some(red => red.row === clickedGridCell.row && red.col === clickedGridCell.col);
 
-        let scoreChange = 0;
+        let timeChange = 0;
         if (isCoveredByRed) {
-            scoreChange = -25;
+            timeChange = -10; // 點擊紅色方塊扣 10 秒
             this.activeRedCells = this.activeRedCells.filter(red => !(red.row === clickedGridCell.row && red.col === clickedGridCell.col));
         } else if (clickedGridCell.color === 'green') {
-            scoreChange = clickedGridCell.interact();
+            timeChange = clickedGridCell.interact(); // 點擊綠色方塊加 1 秒
             this.gridCells[index] = new Cell(clickedGridCell.row, clickedGridCell.col, 'normal', 'stay', 0);
             this.gridCells[index].element = clickedGridCell.element;
         }
 
-        if (scoreChange !== 0) {
-            this.score += scoreChange;
+        if (timeChange !== 0) {
+            this.timeLeft = parseFloat((this.timeLeft + timeChange).toFixed(1));
+            if (this.timeLeft <= 0) {
+                this.timeLeft = 0.0;
+                this.updateDisplays();
+                this.endGame();
+                return;
+            }
             this.updateDisplays();
             this.renderGrid();
         }
     }
 
     updateDisplays() {
-        this.scoreDisplay.textContent = this.score;
-        this.timerDisplay.textContent = this.timeLeft;
+        // 如果你的 DOM 結構可以同時呈現，這裡將剩餘時間與存活時間分別更新
+        if (this.timerDisplay) {
+            this.timerDisplay.textContent = this.timeLeft.toFixed(1);
+        }
+        if (this.scoreDisplay) {
+            this.scoreDisplay.textContent = this.survivalTime.toFixed(1);
+        }
     }
 
     endGame() {
         this.isPlaying = false;
-        clearInterval(this.gameInterval);
         clearInterval(this.spawnInterval);
         this.gridCells.forEach(cellObj => {
             cellObj.color = 'normal';
             if (cellObj.element) cellObj.element.className = 'cell';
         });
         this.activeRedCells = [];
+        this.redWaveSteps = 0;
         this.startBtn.disabled = false;
         if (this.rowsSelect) this.rowsSelect.disabled = false;
         if (this.colsSelect) this.colsSelect.disabled = false;
-        alert(`時間到！你的最終得分是：${this.score} 分`);
+        alert(`時間到！你的最終存活時間為：${this.survivalTime.toFixed(1)} 秒`);
     }
 }
